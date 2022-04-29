@@ -1,0 +1,42 @@
+name: main
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'yarn'
+      - name: install deps
+        run: yarn install --frozen-lockfile --non-interactive
+      - name: build app
+        run: yarn run build
+      - name: Upload output files
+        uses: actions/upload-artifact@v3
+        with:
+          name: web-files
+          path: out
+
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: web-files
+          path: out
+      - name: Deploy to Firebase
+        uses: w9jds/firebase-action@v2.0.0
+        with:
+          args: deploy --only hosting
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
